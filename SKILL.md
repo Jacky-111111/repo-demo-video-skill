@@ -1,6 +1,6 @@
 ---
 name: repo-demo-video
-description: Generate a narrated product demo video workflow from a GitHub repository or local project. Use when Codex needs to analyze README.md, DEMO_GUIDE.md, demo.config files, package metadata, routes, components, and optionally a deployed URL to produce a demo plan, narration script, manual recording guide, browser screenshots or recordings, optional OpenAI TTS voiceover, partial video fallbacks, and final video composition notes.
+description: Generate a narrated product demo video workflow from a GitHub repository or local project. Use when Codex needs to analyze README.md, DEMO_GUIDE.md, demo.config files, package metadata, routes, components, and optionally a deployed URL to produce a demo plan, professional LLM-backed narration script, manual recording guide, browser screenshots or recordings, optional OpenAI TTS voiceover, partial video fallbacks, and final video composition notes.
 ---
 
 # Repo Demo Video
@@ -41,8 +41,10 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 3. Review generated artifacts in a timestamped output folder such as `demoOutput-2026-05-10-143012/`:
    - `project_summary.md`
    - `demo_plan.draft.json`
-- `demo_plan.json` when confidence is high enough
+   - `demo_plan.json` when confidence is high enough
+   - `narration_script.draft.md`
    - `narration_script.md`
+   - `script_quality_report.json`
    - `demo_storyboard.md`
    - `manual_recording_guide.md`
    - `recordings/` when browser capture succeeds
@@ -86,6 +88,16 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 - Do not force local project startup when run instructions are uncertain.
 - If Playwright, TTS, `ffmpeg`, or the app runtime is unavailable, still produce the written artifacts, partial deliverables, `demo_video.html`, and a manual recording guide.
 
+## Professional Script Writing
+
+- Use the deterministic draft as a fallback, but prefer the OpenAI script writer when `SCRIPT_PROVIDER=openai` and `OPENAI_API_KEY` are set.
+- Use the same `OPENAI_API_KEY` for script writing and OpenAI TTS.
+- Control the product-demo writing prompt in `src/prompts/demoNarrationPrompt.ts`.
+- Control the OpenAI Responses API model with `OPENAI_SCRIPT_MODEL`; if unset, fall back to `OPENAI_MODEL`, then `gpt-5.4-mini`.
+- Write `narration_script.draft.md` for the template draft and `narration_script.md` for the final LLM or fallback script.
+- Write `script_quality_report.json` with provider, model, fallback reason, and quality gate warnings.
+- The prompt should make the scriptwriter understand the product first, avoid badges and raw README metadata, focus on audience/problem/value, and use conservative wording for uncertain claims.
+
 ## Demo Visual Guidance
 
 For polished browser recordings, inject temporary non-persistent visual guidance overlays through Playwright rather than editing app source code.
@@ -103,6 +115,7 @@ Do not use overlays to fabricate functionality. Use them only to guide viewer at
 
 - Default to mock TTS mode with no API key.
 - To generate real audio, set `TTS_PROVIDER=openai` and `OPENAI_API_KEY`.
+- `OPENAI_API_KEY` may be the same key used by the professional script writer.
 - Optional variables: `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE`, `OPENAI_TTS_INSTRUCTIONS`, `TTS_VOICE`.
 - Write real audio to the current run folder, for example `demoOutput-2026-05-10-143012/voiceover.mp3`.
 - Never write API keys into generated files.

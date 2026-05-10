@@ -11,7 +11,7 @@ The skill analyzes a local project folder and generates:
 - a project summary
 - a confidence-scored demo plan draft
 - a final demo plan when confidence is high enough
-- a narration script
+- a narration script, optionally written by an OpenAI LLM
 - a storyboard
 - a manual recording guide
 - optional browser screenshots or recordings
@@ -79,7 +79,9 @@ This is enough to generate:
 
 - `project_summary.md`
 - `demo_plan.draft.json`
+- `narration_script.draft.md`
 - `narration_script.md`
+- `script_quality_report.json`
 - `demo_storyboard.md`
 - `manual_recording_guide.md`
 - `run_report.json`
@@ -91,6 +93,7 @@ npm run demo -- --repo ./path-to-repo --mode draft
 ```
 
 Draft mode does not call real TTS, even if `.env` contains an API key.
+Draft mode can still use OpenAI for professional script writing if `OPENAI_API_KEY` is set and `SCRIPT_PROVIDER=openai`.
 
 ### 2. Browser recording: screenshots and `.webm`
 
@@ -159,6 +162,12 @@ npx playwright install chromium
 ffmpeg -version
 ```
 
+Then copy the environment template and add your local key if you want LLM-written narration or OpenAI TTS:
+
+```powershell
+Copy-Item .env.example .env
+```
+
 ## Install
 
 ```bash
@@ -218,7 +227,9 @@ demoOutput-YYYY-MM-DD-HHMMSS/
 |-- project_summary.md
 |-- demo_plan.draft.json
 |-- demo_plan.json
+|-- narration_script.draft.md
 |-- narration_script.md
+|-- script_quality_report.json
 |-- demo_storyboard.md
 |-- manual_recording_guide.md
 |-- run_report.json
@@ -233,6 +244,47 @@ demoOutput-YYYY-MM-DD-HHMMSS/
 `demo_plan.json` is written when confidence is high enough. A clear README feature list is enough evidence for a final plan even without `DEMO_GUIDE.md` or `demo.config`.
 
 `demo_video.mp4` is only written when browser recording, real voiceover audio, and `ffmpeg` are available. If MP4 composition is incomplete, `run_report.json` records the status as `partial`, `skipped`, or `failed`, and `demo_video.html` provides a local preview of the browser recording, audio, and screenshots.
+
+## Professional Script Writing
+
+The CLI can use OpenAI to turn the analyzed repository, demo plan, README summary, inferred features, route hints, and browser observations into a more polished product demo narration.
+
+The script writer uses the OpenAI Responses API with the same `OPENAI_API_KEY` used for TTS. If no API key is configured, the CLI falls back to the deterministic template script.
+
+Recommended `.env` settings:
+
+```env
+OPENAI_API_KEY=sk-your-api-key-here
+SCRIPT_PROVIDER=openai
+OPENAI_SCRIPT_MODEL=gpt-5.4-mini
+```
+
+Useful options:
+
+- `SCRIPT_PROVIDER=openai`: use the LLM professional demo writer
+- `SCRIPT_PROVIDER=template`: force the deterministic fallback script
+- `OPENAI_SCRIPT_MODEL`: model used for script writing
+- `OPENAI_MODEL`: fallback model if `OPENAI_SCRIPT_MODEL` is not set
+
+The default script model is `gpt-5.4-mini`, chosen as a strong lower-latency, lower-cost option for this writing task. For more intensive script strategy, set:
+
+```env
+OPENAI_SCRIPT_MODEL=gpt-5.5
+```
+
+Script outputs:
+
+- `narration_script.draft.md`: deterministic fallback draft
+- `narration_script.md`: final script, either LLM-written or fallback
+- `script_quality_report.json`: provider, model, fallback reason, and quality gate warnings
+
+The LLM prompt lives in:
+
+```text
+src/prompts/demoNarrationPrompt.ts
+```
+
+The prompt instructs the model to write like a senior product demo scriptwriter: understand the product first, avoid badges and README metadata, focus on audience and value, walk through features professionally, use conservative wording for uncertain claims, and avoid secrets or credentials.
 
 ## Real Voiceover
 
@@ -255,8 +307,10 @@ Copy-Item .env.example .env
 Then edit `.env`:
 
 ```env
-TTS_PROVIDER=openai
 OPENAI_API_KEY=sk-your-api-key-here
+SCRIPT_PROVIDER=openai
+OPENAI_SCRIPT_MODEL=gpt-5.4-mini
+TTS_PROVIDER=openai
 OPENAI_TTS_MODEL=gpt-4o-mini-tts
 OPENAI_TTS_VOICE=coral
 OPENAI_TTS_INSTRUCTIONS=Speak like a polished product demo narrator: clear, warm, concise, and confident.
@@ -281,6 +335,8 @@ npm run demo -- --repo D:\path\to\your-project --mode full
 Optional variables:
 
 ```powershell
+$env:SCRIPT_PROVIDER="openai"
+$env:OPENAI_SCRIPT_MODEL="gpt-5.4-mini"
 $env:OPENAI_TTS_MODEL="gpt-4o-mini-tts"
 $env:OPENAI_TTS_VOICE="coral"
 $env:OPENAI_TTS_INSTRUCTIONS="Speak like a polished product demo narrator."
@@ -292,7 +348,7 @@ The generated audio is written to:
 demoOutput-YYYY-MM-DD-HHMMSS/voiceover.mp3
 ```
 
-API keys are read only from environment variables or the local `.env` file and are never written into generated artifacts. `.env` and `.env.*` are ignored by git; `.env.example` is intentionally tracked as a safe template. When publishing generated voiceover, disclose that the voice is AI-generated.
+The same `OPENAI_API_KEY` is used for professional script writing and OpenAI TTS. API keys are read only from environment variables or the local `.env` file and are never written into generated artifacts. `.env` and `.env.*` are ignored by git; `.env.example` is intentionally tracked as a safe template. When publishing generated voiceover, disclose that the voice is AI-generated.
 
 If `TTS_PROVIDER` is missing, set to `mock`, or `OPENAI_API_KEY` is not set, the CLI uses mock fallback. In that case it still writes `voiceover_script.txt`, but it does not create `voiceover.mp3`.
 
@@ -408,7 +464,7 @@ Implemented now:
 - route and component inference
 - confidence-scored feature inference
 - demo plan draft generation
-- narration script generation
+- template and OpenAI-backed professional narration script generation
 - storyboard and manual recording guide
 - Playwright browser capture and conservative DOM exploration when a URL is available
 - temporary callout and highlight overlays for clearer browser demos

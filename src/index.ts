@@ -4,7 +4,7 @@ import path from "node:path";
 import { analyzeRepo } from "./analyzeRepo.js";
 import { composeVideo } from "./composeVideo.js";
 import { generateDemoPlan, renderManualRecordingGuide, renderProjectSummary, renderStoryboard } from "./generateDemoPlan.js";
-import { generateNarrationScript } from "./generateNarrationScript.js";
+import { generateProfessionalScript } from "./generateProfessionalScript.js";
 import { generateVoiceover } from "./generateVoiceover.js";
 import { createTimestampedOutputDir, isProbablyGitHubUrl, writeJson, writeText } from "./fileUtils.js";
 import { recordBrowserDemo } from "./recordBrowserDemo.js";
@@ -76,12 +76,10 @@ async function main(): Promise<void> {
 
   const analysis = await analyzeRepo(options);
   const plan = generateDemoPlan(analysis);
-  const narrationScript = generateNarrationScript(plan);
   const outputDir = await createTimestampedOutputDir(analysis.repoPath);
 
   await writeText(path.join(outputDir, "project_summary.md"), renderProjectSummary(analysis, plan));
   await writeJson(path.join(outputDir, "demo_plan.draft.json"), plan);
-  await writeText(path.join(outputDir, "narration_script.md"), narrationScript);
   await writeText(path.join(outputDir, "demo_storyboard.md"), renderStoryboard(plan));
   await writeText(path.join(outputDir, "manual_recording_guide.md"), renderManualRecordingGuide(analysis, plan));
 
@@ -89,7 +87,6 @@ async function main(): Promise<void> {
     await writeJson(path.join(outputDir, "demo_plan.json"), plan);
   }
 
-  const voiceover = await generateVoiceover(narrationScript, outputDir, options.mode === "full");
   const recording = options.mode === "draft"
     ? {
         attempted: false,
@@ -99,6 +96,15 @@ async function main(): Promise<void> {
         warnings: ["Draft mode skipped browser recording."]
       }
     : await recordBrowserDemo(analysis.demoUrl?.value ?? analysis.localUrl?.value, plan, outputDir);
+
+  const scriptResult = await generateProfessionalScript(analysis, plan, recording);
+  const narrationScript = scriptResult.script;
+
+  await writeText(path.join(outputDir, "narration_script.draft.md"), scriptResult.draftScript);
+  await writeText(path.join(outputDir, "narration_script.md"), narrationScript);
+  await writeJson(path.join(outputDir, "script_quality_report.json"), scriptResult.qualityReport);
+
+  const voiceover = await generateVoiceover(narrationScript, outputDir, options.mode === "full");
   const composition = options.mode === "full"
     ? await composeVideo(outputDir)
     : {
@@ -112,10 +118,17 @@ async function main(): Promise<void> {
     outputDir,
     finalPlanGenerated: plan.confidenceSummary.shouldGenerateFinalPlan,
     deliverables: composition.deliverables,
+    scriptQuality: scriptResult.qualityReport,
     voiceover,
     recording,
     composition,
-    warnings: [...analysis.warnings, ...voiceover.warnings, ...recording.warnings, ...composition.warnings]
+    warnings: [
+      ...analysis.warnings,
+      ...scriptResult.qualityReport.warnings,
+      ...voiceover.warnings,
+      ...recording.warnings,
+      ...composition.warnings
+    ]
   });
 
   console.log(`Generated demo artifacts in ${outputDir}`);
