@@ -141,7 +141,7 @@ Verify that `ffmpeg` is available:
 ffmpeg -version
 ```
 
-The current MVP voiceover module runs in mock mode. It writes the narration script and instructions, but does not call a TTS provider or create real audio automatically. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
+The recommended setup uses OpenAI TTS to create `output/voiceover.mp3`. If no API key is configured, the CLI falls back to mock voiceover mode: it writes the narration script and instructions, but does not create audio. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
 
 ```text
 output/video_composition_notes.md
@@ -222,7 +222,7 @@ output/
 
 ## Real Voiceover
 
-Mock TTS is the default, so the project runs without secrets.
+For the best result, configure OpenAI TTS in a local `.env` file so the CLI can generate `output/voiceover.mp3`. Mock mode is only a fallback for missing API configuration; it keeps the workflow running but does not create real audio.
 
 ### Option A: local `.env` file
 
@@ -248,7 +248,7 @@ OPENAI_TTS_VOICE=coral
 OPENAI_TTS_INSTRUCTIONS=Speak like a polished product demo narrator: clear, warm, concise, and confident.
 ```
 
-The CLI loads `.env` automatically through `dotenv/config`, so after creating the local file you can run:
+Replace `sk-your-api-key-here` with your real local API key. The CLI loads `.env` automatically through `dotenv/config`, so after creating the local file you can run:
 
 ```powershell
 npm run demo -- --repo D:\path\to\your-project --mode full
@@ -279,6 +279,8 @@ output/voiceover.mp3
 ```
 
 API keys are read only from environment variables or the local `.env` file and are never written into generated artifacts. `.env` and `.env.*` are ignored by git; `.env.example` is intentionally tracked as a safe template. When publishing generated voiceover, disclose that the voice is AI-generated.
+
+If `TTS_PROVIDER` is missing, set to `mock`, or `OPENAI_API_KEY` is not set, the CLI uses mock fallback. In that case it still writes `voiceover_script.txt`, but it does not create `voiceover.mp3`.
 
 ## DEMO_GUIDE.md
 
