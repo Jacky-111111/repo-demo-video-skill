@@ -20,10 +20,15 @@ function selectProvider(allowRealTts: boolean): { provider: TtsProvider; name: "
     return { provider: new MockTtsProvider(), name: "mock" };
   }
 
-  const requested = (process.env.TTS_PROVIDER || "mock").toLowerCase();
-  if (requested === "openai") {
+  const requested = (process.env.TTS_PROVIDER || "").toLowerCase();
+  if (requested === "mock" || requested === "none" || requested === "off") {
+    return { provider: new MockTtsProvider(), name: "mock" };
+  }
+
+  if (requested === "openai" || (!requested && process.env.OPENAI_API_KEY)) {
     return { provider: new OpenAiTtsProvider(), name: "openai" };
   }
+
   return { provider: new MockTtsProvider(), name: "mock" };
 }
 
@@ -45,10 +50,12 @@ Real TTS enabled for this run: ${allowRealTts ? "yes" : "no"}
 
 To generate real TTS with OpenAI:
 
-- Set TTS_PROVIDER=openai.
 - Set OPENAI_API_KEY in the environment.
+- Optional: set TTS_PROVIDER=openai. If OPENAI_API_KEY is set and TTS_PROVIDER is unset, OpenAI TTS is used by default.
+- Set TTS_PROVIDER=mock to force local mock mode.
 - Optional: set OPENAI_TTS_MODEL, OPENAI_TTS_VOICE, or OPENAI_TTS_INSTRUCTIONS.
 - The default model is gpt-4o-mini-tts and the default voice is coral.
+- The sanitized narration script is sent to the configured TTS provider to generate audio.
 - Do not include API keys or credentials in generated artifacts.
 - Disclose to viewers when a voice is AI-generated.
 `

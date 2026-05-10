@@ -146,7 +146,9 @@ Verify that `ffmpeg` is available:
 ffmpeg -version
 ```
 
-The recommended setup uses OpenAI TTS to create `voiceover.mp3` in the current run folder. If no API key is configured, the CLI falls back to mock voiceover mode: it writes the narration script and instructions, but does not create audio. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
+The recommended setup uses OpenAI TTS to create `voiceover.mp3` in the current run folder. In full mode, if `OPENAI_API_KEY` is set and `TTS_PROVIDER` is unset, the CLI uses OpenAI TTS by default. Set `TTS_PROVIDER=mock` only when you intentionally want local mock mode.
+
+If no API key is configured, the CLI falls back to mock voiceover mode: it writes the narration script and instructions, but does not create audio. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
 
 ```text
 demoOutput-YYYY-MM-DD-HHMMSS/video_composition_notes.md
@@ -290,6 +292,8 @@ The prompt instructs the model to write like a senior product demo scriptwriter:
 
 For the best result, configure OpenAI TTS in a local `.env` file so the CLI can generate `voiceover.mp3` in the current timestamped run folder. Mock mode is only a fallback for missing API configuration; it keeps the workflow running but does not create real audio.
 
+Voiceover generation requires sending the sanitized narration script text to the configured TTS provider. The CLI does not send raw `.env` files, API keys, private tokens, real credentials, private user data, or unnecessary source files. It sends the cleaned voiceover text that is also saved as `voiceover_script.txt`.
+
 ### Option A: local `.env` file
 
 For day-to-day use, create a local `.env` file in this project root:
@@ -337,6 +341,7 @@ Optional variables:
 ```powershell
 $env:SCRIPT_PROVIDER="openai"
 $env:OPENAI_SCRIPT_MODEL="gpt-5.4-mini"
+$env:TTS_PROVIDER="openai"
 $env:OPENAI_TTS_MODEL="gpt-4o-mini-tts"
 $env:OPENAI_TTS_VOICE="coral"
 $env:OPENAI_TTS_INSTRUCTIONS="Speak like a polished product demo narrator."
@@ -348,9 +353,9 @@ The generated audio is written to:
 demoOutput-YYYY-MM-DD-HHMMSS/voiceover.mp3
 ```
 
-The same `OPENAI_API_KEY` is used for professional script writing and OpenAI TTS. API keys are read only from environment variables or the local `.env` file and are never written into generated artifacts. `.env` and `.env.*` are ignored by git; `.env.example` is intentionally tracked as a safe template. When publishing generated voiceover, disclose that the voice is AI-generated.
+The same `OPENAI_API_KEY` is used for professional script writing and OpenAI TTS. If `OPENAI_API_KEY` is set and `TTS_PROVIDER` is unset, OpenAI TTS is used by default. API keys are read only from environment variables or the local `.env` file and are never written into generated artifacts. `.env` and `.env.*` are ignored by git; `.env.example` is intentionally tracked as a safe template. When publishing generated voiceover, disclose that the voice is AI-generated.
 
-If `TTS_PROVIDER` is missing, set to `mock`, or `OPENAI_API_KEY` is not set, the CLI uses mock fallback. In that case it still writes `voiceover_script.txt`, but it does not create `voiceover.mp3`.
+If `OPENAI_API_KEY` is not set, or if `TTS_PROVIDER=mock`, `none`, or `off`, the CLI uses mock fallback. In that case it still writes `voiceover_script.txt`, but it does not create `voiceover.mp3`.
 
 ## DEMO_GUIDE.md
 
@@ -448,6 +453,8 @@ The skill is conservative by design:
 - treats `demo.config` as optional
 - avoids destructive commands
 - avoids deployment commands
+- allows external LLM/TTS calls when provider environment variables are configured or narrated output is requested
+- sends only sanitized project summaries, demo plans, browser observations, and narration script text to configured external providers
 - does not expose secrets, API keys, `.env` values, private tokens, private user data, or credentials
 - does not include real passwords in narration or video
 - skips local startup when run commands are uncertain

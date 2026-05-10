@@ -76,7 +76,9 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 - Write generated artifacts only into a new timestamped `demoOutput-YYYY-MM-DD-HHMMSS/` folder in the target repository.
 - Do not delete files recursively or run destructive commands.
 - Do not run deployment commands.
-- Do not expose secrets, API keys, private tokens, `.env` values, private user data, or real credentials in narration, screenshots, or video.
+- External LLM/TTS calls are allowed when the user requests narrated output or configures provider environment variables. Send only sanitized project summaries, demo plans, browser observations, and narration script text.
+- Do not send raw `.env` files, API keys, private tokens, private user data, real credentials, or unnecessary source files to external LLM/TTS providers.
+- Do not expose secrets, API keys, private tokens, `.env` values, private user data, or real credentials in narration, screenshots, video, logs, or generated artifacts.
 - If a test account is documented, mention only that a demo account is used unless the user explicitly asks otherwise.
 
 ## Browser And Video Behavior
@@ -113,11 +115,14 @@ Do not use overlays to fabricate functionality. Use them only to guide viewer at
 
 ## Voiceover
 
-- Default to mock TTS mode with no API key.
-- To generate real audio, set `TTS_PROVIDER=openai` and `OPENAI_API_KEY`.
+- Default to OpenAI TTS in full mode when `OPENAI_API_KEY` is set.
+- To generate real audio explicitly, set `TTS_PROVIDER=openai` and `OPENAI_API_KEY`.
+- If `TTS_PROVIDER` is unset but `OPENAI_API_KEY` exists, use OpenAI TTS.
+- To force local mock mode, set `TTS_PROVIDER=mock`.
 - `OPENAI_API_KEY` may be the same key used by the professional script writer.
 - Optional variables: `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE`, `OPENAI_TTS_INSTRUCTIONS`, `TTS_VOICE`.
 - Write real audio to the current run folder, for example `demoOutput-2026-05-10-143012/voiceover.mp3`.
+- Sending the sanitized `voiceover_script.txt` text to the configured TTS provider is required to create voiceover audio.
 - Never write API keys into generated files.
 - Disclose that generated voiceover is AI-generated when publishing the demo.
 

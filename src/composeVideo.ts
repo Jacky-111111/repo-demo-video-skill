@@ -83,7 +83,7 @@ export async function composeVideo(outputDir: string): Promise<VideoCompositionR
   const playbackHtml = await writePlaybackHtml(outputDir, recording, audio);
 
   if (!recording) warnings.push("No browser video recording was found.");
-  if (!audio) warnings.push("No real voiceover audio was found; mock mode only wrote the script.");
+  if (!audio) warnings.push("No real voiceover audio file was found at voiceover.mp3. Check voiceover provider settings and warnings in run_report.json.");
 
   if (warnings.length || !recording || !audio) {
     const status = recording ? "partial" : "skipped";
