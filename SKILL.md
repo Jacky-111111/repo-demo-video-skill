@@ -86,9 +86,11 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 - Prefer a deployed `demoUrl` from config, `DEMO_GUIDE.md`, README, or the `--url` argument.
 - Use Playwright when available to inspect visible headings, buttons, links, forms, and capture screenshots or recordings.
 - Use conservative DOM heuristics to fill safe sample inputs, choose non-empty select options, and click common demo controls such as Add, Calculate, Method, Resources, New, or Create.
+- Hold each planned scene on screen long enough for narration pacing, and pause briefly after heuristic actions so the recording is not just rapid clicks.
 - Register the canonical `.webm` recording path in `run_report.json`.
 - Do not force local project startup when run instructions are uncertain.
 - If Playwright, TTS, `ffmpeg`, or the app runtime is unavailable, still produce the written artifacts, partial deliverables, `demo_video.html`, and a manual recording guide.
+- Compose final MP4 against voiceover duration. Do not use shortest-stream truncation. If the browser recording is shorter than the voiceover, extend the final video frame with `ffmpeg` `tpad` and report the extension duration.
 
 ## Professional Script Writing
 

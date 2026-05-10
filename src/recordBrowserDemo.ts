@@ -9,6 +9,9 @@ function urlForRoute(baseUrl: string, route?: string): string {
   return new URL(route.replace(/^\//, ""), baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`).toString();
 }
 
+const SCENE_HOLD_MS = 8_000;
+const ACTION_HOLD_MS = 2_500;
+
 async function setDemoCallout(page: import("playwright").Page, message: string): Promise<void> {
   await page.evaluate((text) => {
     let el = document.getElementById("codex-demo-callout");
@@ -144,7 +147,7 @@ async function clickFirstMatching(page: import("playwright").Page, patterns: Reg
       const label = await locator.textContent().catch(() => pattern.source);
       await highlightLocator(locator, `Show ${label?.trim() || "this control"}.`);
       await locator.click({ timeout: 5_000 }).catch(() => undefined);
-      await page.waitForTimeout(600);
+      await page.waitForTimeout(ACTION_HOLD_MS);
       return `clicked ${label?.trim() || pattern.source}`;
     }
   }
@@ -183,7 +186,7 @@ async function fillDemoInputs(page: import("playwright").Page): Promise<string[]
   }
 
   if (actions.length) {
-    await page.waitForTimeout(600);
+    await page.waitForTimeout(ACTION_HOLD_MS);
   }
   return actions;
 }
@@ -195,6 +198,7 @@ async function performHeuristicDemo(page: import("playwright").Page, screenshots
   await setDemoCallout(page, "Explore the live UI and highlight meaningful product states.");
   await clearDemoRing(page);
   observations.push(`visible controls: ${beforeTexts.join(" | ") || "none"}`);
+  await page.waitForTimeout(ACTION_HOLD_MS);
   artifacts.push(await screenshot(page, screenshotsDir, "dom-initial"));
 
   const filled = await fillDemoInputs(page);
@@ -272,6 +276,7 @@ export async function recordBrowserDemo(baseUrl: string | undefined, plan: DemoP
         await clearDemoRing(page);
       }
 
+      await page.waitForTimeout(SCENE_HOLD_MS);
       artifacts.push(await screenshot(page, screenshotsDir, `scene-${index + 1}-${step.title}`));
     }
 

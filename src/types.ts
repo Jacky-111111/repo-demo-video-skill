@@ -187,6 +187,11 @@ export interface VideoCompositionResult {
   status: "complete" | "partial" | "skipped" | "failed";
   success: boolean;
   artifact?: string;
+  timing?: {
+    audioDurationSeconds?: number;
+    videoDurationSeconds?: number;
+    extendedFinalFrameSeconds?: number;
+  };
   deliverables: {
     browserRecordingWebm?: string;
     voiceoverAudio?: string;

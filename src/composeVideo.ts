@@ -26,6 +26,25 @@ function htmlEscape(value: string): string {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[char] ?? char);
 }
 
+function probeDuration(file: string): number {
+  const result = spawnSync(
+    "ffprobe",
+    [
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      file
+    ],
+    { encoding: "utf8" }
+  );
+
+  const duration = Number.parseFloat(result.stdout.trim());
+  return Number.isFinite(duration) ? duration : 0;
+}
+
 async function writePlaybackHtml(outputDir: string, recording?: string, audio?: string): Promise<string> {
   const screenshots = await listImages(path.join(outputDir, "screenshots"));
   const htmlPath = path.join(outputDir, "demo_video.html");
@@ -115,7 +134,32 @@ Add the missing dependency or artifact, then rerun in full mode to compose demo_
   }
 
   const finalVideo = path.join(outputDir, "demo_video.mp4");
-  const result = spawnSync("ffmpeg", ["-y", "-i", recording, "-i", audio, "-c:v", "libx264", "-c:a", "aac", "-shortest", finalVideo], {
+  const audioDuration = probeDuration(audio);
+  const videoDuration = probeDuration(recording);
+  const extendedFinalFrameSeconds = Math.max(0, audioDuration - videoDuration);
+  const compositionWarnings: string[] = [];
+  const args = ["-y", "-i", recording, "-i", audio];
+
+  if (!audioDuration) {
+    compositionWarnings.push("Could not read voiceover duration with ffprobe, so ffmpeg will compose without an explicit audio-length target.");
+  }
+  if (!videoDuration) {
+    compositionWarnings.push("Could not read recording duration with ffprobe, so the final frame cannot be extended automatically.");
+  }
+  if (extendedFinalFrameSeconds > 0.25) {
+    args.push("-filter:v", `tpad=stop_mode=clone:stop_duration=${extendedFinalFrameSeconds.toFixed(2)}`);
+    compositionWarnings.push(
+      `Browser recording was shorter than voiceover, so the final frame was extended for ${extendedFinalFrameSeconds.toFixed(2)} seconds.`
+    );
+  }
+
+  args.push("-c:v", "libx264", "-c:a", "aac");
+  if (audioDuration > 0) {
+    args.push("-t", audioDuration.toFixed(2));
+  }
+  args.push(finalVideo);
+
+  const result = spawnSync("ffmpeg", args, {
     stdio: "ignore"
   });
 
@@ -128,7 +172,12 @@ Add the missing dependency or artifact, then rerun in full mode to compose demo_
         voiceoverAudio: audio,
         playbackHtml
       },
-      warnings: ["ffmpeg failed while composing the final video."]
+      timing: {
+        audioDurationSeconds: audioDuration || undefined,
+        videoDurationSeconds: videoDuration || undefined,
+        extendedFinalFrameSeconds: extendedFinalFrameSeconds > 0.25 ? extendedFinalFrameSeconds : 0
+      },
+      warnings: ["ffmpeg failed while composing the final video.", ...compositionWarnings]
     };
   }
 
@@ -142,6 +191,11 @@ Add the missing dependency or artifact, then rerun in full mode to compose demo_
       narratedMp4: finalVideo,
       playbackHtml
     },
-    warnings: []
+    timing: {
+      audioDurationSeconds: audioDuration || undefined,
+      videoDurationSeconds: videoDuration || undefined,
+      extendedFinalFrameSeconds: extendedFinalFrameSeconds > 0.25 ? extendedFinalFrameSeconds : 0
+    },
+    warnings: compositionWarnings
   };
 }

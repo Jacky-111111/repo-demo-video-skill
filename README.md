@@ -247,6 +247,8 @@ demoOutput-YYYY-MM-DD-HHMMSS/
 
 `demo_video.mp4` is only written when browser recording, real voiceover audio, and `ffmpeg` are available. If MP4 composition is incomplete, `run_report.json` records the status as `partial`, `skipped`, or `failed`, and `demo_video.html` provides a local preview of the browser recording, audio, and screenshots.
 
+When both browser recording and voiceover audio exist, final MP4 composition uses the voiceover duration as the target. The CLI does not use shortest-stream truncation. If the `.webm` recording is shorter than `voiceover.mp3`, `ffmpeg` extends the final video frame to keep the full narration audible. The extension duration is written to `run_report.json` under `composition.timing` and echoed as a composition warning.
+
 ## Professional Script Writing
 
 The CLI can use OpenAI to turn the analyzed repository, demo plan, README summary, inferred features, route hints, and browser observations into a more polished product demo narration.
@@ -477,6 +479,7 @@ Implemented now:
 - temporary callout and highlight overlays for clearer browser demos
 - mock voiceover module
 - OpenAI TTS voiceover via environment variables
+- voiceover-length MP4 composition with final-frame extension when recordings are shorter than narration
 - graceful `ffmpeg` composition notes and `demo_video.html` fallback
 
 Planned extensions:
