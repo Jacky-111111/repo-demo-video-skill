@@ -3,6 +3,7 @@ dist/
 output/
 .env
 .env.*
+!.env.example
 *.log
 playwright-report/
 test-results/

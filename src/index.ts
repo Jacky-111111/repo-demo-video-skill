@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "dotenv/config";
 import path from "node:path";
 import { analyzeRepo } from "./analyzeRepo.js";
 import { composeVideo } from "./composeVideo.js";

@@ -224,7 +224,39 @@ output/
 
 Mock TTS is the default, so the project runs without secrets.
 
-To generate real voiceover with OpenAI TTS:
+### Option A: local `.env` file
+
+For day-to-day use, create a local `.env` file in this project root:
+
+```text
+D:\GitHub_Repos\repo-demo-video-skill\.env
+```
+
+Start from the template:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Then edit `.env`:
+
+```env
+TTS_PROVIDER=openai
+OPENAI_API_KEY=sk-your-api-key-here
+OPENAI_TTS_MODEL=gpt-4o-mini-tts
+OPENAI_TTS_VOICE=coral
+OPENAI_TTS_INSTRUCTIONS=Speak like a polished product demo narrator: clear, warm, concise, and confident.
+```
+
+The CLI loads `.env` automatically through `dotenv/config`, so after creating the local file you can run:
+
+```powershell
+npm run demo -- --repo D:\path\to\your-project --mode full
+```
+
+### Option B: temporary terminal variables
+
+You can also set variables only for the current PowerShell session:
 
 ```powershell
 $env:TTS_PROVIDER="openai"
@@ -246,7 +278,7 @@ The generated audio is written to:
 output/voiceover.mp3
 ```
 
-API keys are read only from environment variables and are never written into generated artifacts. When publishing generated voiceover, disclose that the voice is AI-generated.
+API keys are read only from environment variables or the local `.env` file and are never written into generated artifacts. `.env` and `.env.*` are ignored by git; `.env.example` is intentionally tracked as a safe template. When publishing generated voiceover, disclose that the voice is AI-generated.
 
 ## DEMO_GUIDE.md
 

@@ -20,6 +20,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^17.4.2",
     "yaml": "^2.7.0"
   },
   "optionalDependencies": {
