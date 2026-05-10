@@ -56,13 +56,113 @@ Optional:
 
 GitHub repository URL cloning is planned, but the MVP expects a local clone path.
 
+## Local Environment Requirements
+
+Install only the tools you need for the level of output you want.
+
+### 1. Minimum: analysis and draft artifacts
+
+Required:
+
+- Node.js 20 or newer
+- npm
+
+Check your local versions:
+
+```bash
+node -v
+npm -v
+```
+
+This is enough to generate:
+
+- `project_summary.md`
+- `demo_plan.draft.json`
+- `narration_script.md`
+- `demo_storyboard.md`
+- `manual_recording_guide.md`
+- `run_report.json`
+
+Run draft mode when you only want repo analysis and written demo assets:
+
+```bash
+npm run demo -- --repo ./path-to-repo --mode draft
+```
+
+### 2. Browser recording: screenshots and `.webm`
+
+Required in addition to Node/npm:
+
+- Playwright
+- Playwright Chromium browser
+
+Install project dependencies and the browser runtime:
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+This enables browser capture when you provide a deployed URL or a confident local URL:
+
+```bash
+npm run demo -- --repo ./path-to-repo --url https://example.com --mode full
+```
+
+Browser recordings and screenshots are written under:
+
+```text
+output/recordings/
+```
+
+If Playwright or Chromium is missing, the CLI still generates the written artifacts and records the missing dependency in `output/run_report.json`.
+
+### 3. Final MP4 composition
+
+Required in addition to browser recording:
+
+- `ffmpeg` available on `PATH`
+- a real voiceover audio file, such as `output/voiceover.mp3`
+
+On Windows, install `ffmpeg` with one of:
+
+```powershell
+winget install Gyan.FFmpeg
+```
+
+```powershell
+choco install ffmpeg
+```
+
+Verify that `ffmpeg` is available:
+
+```bash
+ffmpeg -version
+```
+
+The current MVP voiceover module runs in mock mode. It writes the narration script and instructions, but does not call a TTS provider or create real audio automatically. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
+
+```text
+output/video_composition_notes.md
+```
+
+### Recommended full setup
+
+For the best local experience:
+
+```bash
+npm install
+npx playwright install chromium
+ffmpeg -version
+```
+
 ## Install
 
 ```bash
 npm install
 ```
 
-Playwright is listed as an optional dependency. If it is not installed or browsers are unavailable, the CLI still produces planning artifacts and records the issue in `output/run_report.json`.
+Playwright is listed as an optional dependency. Install Chromium with `npx playwright install chromium` if you want browser screenshots or `.webm` recordings. Install `ffmpeg` separately if you want final MP4 composition.
 
 ## Run
 
