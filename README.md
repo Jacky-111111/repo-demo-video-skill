@@ -15,7 +15,8 @@ The skill analyzes a local project folder and generates:
 - a storyboard
 - a manual recording guide
 - optional browser screenshots or recordings
-- optional video composition notes or `demo_video.mp4`
+- optional OpenAI TTS voiceover
+- optional video composition notes, `demo_video.html`, or `demo_video.mp4`
 
 The workflow is intentionally graceful. If automation cannot safely run the app or record the browser, the written demo artifacts are still produced.
 
@@ -200,18 +201,52 @@ Generated files are written to the target repository's `output/` folder:
 
 ```text
 output/
-├── project_summary.md
-├── demo_plan.draft.json
-├── demo_plan.json
-├── narration_script.md
-├── demo_storyboard.md
-├── manual_recording_guide.md
-├── run_report.json
-├── recordings/
-└── demo_video.mp4
+|-- project_summary.md
+|-- demo_plan.draft.json
+|-- demo_plan.json
+|-- narration_script.md
+|-- demo_storyboard.md
+|-- manual_recording_guide.md
+|-- run_report.json
+|-- voiceover_script.txt
+|-- voiceover.mp3
+|-- demo_video.html
+|-- screenshots/
+|-- recordings/
+`-- demo_video.mp4
 ```
 
-`demo_plan.json` is only written when confidence is high enough. `demo_video.mp4` is only written when browser recording, real voiceover audio, and `ffmpeg` are available.
+`demo_plan.json` is written when confidence is high enough. A clear README feature list is enough evidence for a final plan even without `DEMO_GUIDE.md` or `demo.config`.
+
+`demo_video.mp4` is only written when browser recording, real voiceover audio, and `ffmpeg` are available. If MP4 composition is incomplete, `run_report.json` records the status as `partial`, `skipped`, or `failed`, and `demo_video.html` provides a local preview of the browser recording, audio, and screenshots.
+
+## Real Voiceover
+
+Mock TTS is the default, so the project runs without secrets.
+
+To generate real voiceover with OpenAI TTS:
+
+```powershell
+$env:TTS_PROVIDER="openai"
+$env:OPENAI_API_KEY="your_api_key"
+npm run demo -- --repo D:\path\to\your-project --mode full
+```
+
+Optional variables:
+
+```powershell
+$env:OPENAI_TTS_MODEL="gpt-4o-mini-tts"
+$env:OPENAI_TTS_VOICE="coral"
+$env:OPENAI_TTS_INSTRUCTIONS="Speak like a polished product demo narrator."
+```
+
+The generated audio is written to:
+
+```text
+output/voiceover.mp3
+```
+
+API keys are read only from environment variables and are never written into generated artifacts. When publishing generated voiceover, disclose that the voice is AI-generated.
 
 ## DEMO_GUIDE.md
 
@@ -278,6 +313,17 @@ Every important inferred item receives one of:
 
 If the plan contains important low-confidence assumptions, the CLI writes `demo_plan.draft.json` and explains what needs confirmation instead of pretending certainty.
 
+## README Parsing
+
+The analyzer handles ordinary project READMEs more robustly now:
+
+- skips badges, shield images, decorative rows, raw links, and status metadata
+- recognizes decorated headings like `## Features` with emoji or symbols
+- extracts feature bullets under feature/capability/highlight headings
+- extracts usage workflow steps under usage/how-to/demo/quick-start headings
+- prefers clean blockquotes and overview/about/description text for summaries
+- sanitizes narration text before writing scripts or TTS input
+
 ## Safety Model
 
 The skill is conservative by design:
@@ -290,6 +336,7 @@ The skill is conservative by design:
 - does not expose secrets, API keys, `.env` values, private tokens, private user data, or credentials
 - does not include real passwords in narration or video
 - skips local startup when run commands are uncertain
+- records partial video deliverables clearly when MP4 composition is unavailable
 
 ## MVP Scope
 
@@ -304,16 +351,17 @@ Implemented now:
 - demo plan draft generation
 - narration script generation
 - storyboard and manual recording guide
-- Playwright browser capture when a URL is available
+- Playwright browser capture and conservative DOM exploration when a URL is available
 - mock voiceover module
-- graceful `ffmpeg` composition notes
+- OpenAI TTS voiceover via environment variables
+- graceful `ffmpeg` composition notes and `demo_video.html` fallback
 
 Planned extensions:
 
 - GitHub repo URL cloning
 - safer automatic local app startup
 - deeper browser interaction
-- real OpenAI TTS or ElevenLabs integration
+- ElevenLabs or local TTS integration
 - captions
 - multiple video styles
 - automatic feature discovery from UI exploration

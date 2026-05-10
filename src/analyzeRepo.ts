@@ -6,6 +6,7 @@ import { inferComponents, inferRoutes } from "./inferRoutes.js";
 import { loadDemoConfig } from "./loadDemoConfig.js";
 import { loadDemoGuide } from "./loadDemoGuide.js";
 import { extractUrls, normalizeWhitespace, pathExists } from "./fileUtils.js";
+import { chooseSafeNarrationText } from "./sanitizeNarration.js";
 
 function evidence<T>(value: T, confidence: Evidence<T>["confidence"], source: string, notes?: string): Evidence<T> {
   return { value, confidence, source, notes };
@@ -15,12 +16,16 @@ function firstNonEmpty(values: Array<Evidence<string> | undefined>, fallback: Ev
   return values.find((item) => item && normalizeWhitespace(item.value)) ?? fallback;
 }
 
+function isUsableDemoUrl(url: string): boolean {
+  return !/github\.com|npmjs\.com|localhost|127\.0\.0\.1|example\.com|example\.org|example\.net|your-project|your-domain|placeholder/i.test(url);
+}
+
 function selectDemoUrl(optionsUrl: string | undefined, configUrl: string | undefined, guideUrl: string | undefined, readmeUrls: string[]): Evidence<string> | undefined {
   if (optionsUrl) return evidence(optionsUrl, "high", "--url argument");
   if (configUrl) return evidence(configUrl, "high", "demo.config");
   if (guideUrl) return evidence(guideUrl, "high", "DEMO_GUIDE.md");
 
-  const nonRepoUrl = readmeUrls.find((url) => !/github\.com|npmjs\.com|localhost|127\.0\.0\.1/i.test(url));
+  const nonRepoUrl = readmeUrls.find(isUsableDemoUrl);
   if (nonRepoUrl) return evidence(nonRepoUrl, "medium", "README.md URL");
 
   return undefined;
@@ -76,11 +81,23 @@ export async function analyzeRepo(options: CliOptions): Promise<RepoAnalysis> {
     [
       config.config?.tagline ? evidence(config.config.tagline, "high", "demo.config") : undefined,
       guide.pitch ? evidence(guide.pitch, "high", "DEMO_GUIDE.md") : undefined,
-      metadata.packageDescription ? evidence(metadata.packageDescription, "medium", "package.json description") : undefined,
-      metadata.readmeSummary ? evidence(metadata.readmeSummary, "high", "README.md summary") : undefined
+      metadata.readmeSummary ? evidence(metadata.readmeSummary, "high", "README.md summary") : undefined,
+      metadata.packageDescription ? evidence(metadata.packageDescription, "medium", "package.json description") : undefined
     ],
     evidence("A software project with a product demo opportunity.", "low", "fallback assumption")
   );
+
+  const safeTagline = chooseSafeNarrationText(
+    [
+      tagline.value,
+      guide.pitch,
+      metadata.readme.blockquoteSummary,
+      metadata.readme.summary,
+      metadata.packageDescription
+    ],
+    "A software project with a product demo opportunity."
+  );
+  const sanitizedTagline = evidence(safeTagline, tagline.confidence, tagline.source, tagline.notes);
 
   const targetAudience = evidence(
     "Users described by the README and primary feature set.",
@@ -90,9 +107,9 @@ export async function analyzeRepo(options: CliOptions): Promise<RepoAnalysis> {
   );
 
   const coreProblem = evidence(
-    tagline.value,
-    tagline.confidence,
-    tagline.source,
+    sanitizedTagline.value,
+    sanitizedTagline.confidence,
+    sanitizedTagline.source,
     tagline.confidence === "low" ? "Add a clearer one-sentence pitch to README.md or DEMO_GUIDE.md." : undefined
   );
 
@@ -113,7 +130,7 @@ export async function analyzeRepo(options: CliOptions): Promise<RepoAnalysis> {
     guide,
     metadata,
     projectName,
-    tagline,
+    tagline: sanitizedTagline,
     targetAudience,
     coreProblem,
     demoUrl,

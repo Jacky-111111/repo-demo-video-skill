@@ -98,11 +98,19 @@ async function main(): Promise<void> {
         warnings: ["Draft mode skipped browser recording."]
       }
     : await recordBrowserDemo(analysis.demoUrl?.value ?? analysis.localUrl?.value, plan, outputDir);
-  const composition = options.mode === "full" ? await composeVideo(outputDir) : { success: false, warnings: ["Draft mode skipped video composition."] };
+  const composition = options.mode === "full"
+    ? await composeVideo(outputDir)
+    : {
+        status: "skipped" as const,
+        success: false,
+        deliverables: {},
+        warnings: ["Draft mode skipped video composition."]
+      };
 
   await writeJson(path.join(outputDir, "run_report.json"), {
     outputDir,
     finalPlanGenerated: plan.confidenceSummary.shouldGenerateFinalPlan,
+    deliverables: composition.deliverables,
     voiceover,
     recording,
     composition,

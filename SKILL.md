@@ -1,6 +1,6 @@
 ---
 name: repo-demo-video
-description: Generate a narrated product demo video workflow from a GitHub repository or local project. Use when Codex needs to analyze README.md, DEMO_GUIDE.md, demo.config files, package metadata, routes, components, and optionally a deployed URL to produce a demo plan, narration script, manual recording guide, browser screenshots or recordings, voiceover placeholders, and final video composition notes.
+description: Generate a narrated product demo video workflow from a GitHub repository or local project. Use when Codex needs to analyze README.md, DEMO_GUIDE.md, demo.config files, package metadata, routes, components, and optionally a deployed URL to produce a demo plan, narration script, manual recording guide, browser screenshots or recordings, optional OpenAI TTS voiceover, partial video fallbacks, and final video composition notes.
 ---
 
 # Repo Demo Video
@@ -41,19 +41,32 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 3. Review generated artifacts in `output/`:
    - `project_summary.md`
    - `demo_plan.draft.json`
-   - `demo_plan.json` when confidence is high enough
+- `demo_plan.json` when confidence is high enough
    - `narration_script.md`
    - `demo_storyboard.md`
    - `manual_recording_guide.md`
    - `recordings/` when browser capture succeeds
-   - `demo_video.mp4` only when recording, audio, and `ffmpeg` are available
+   - `screenshots/` when browser exploration succeeds
+   - `voiceover.mp3` when `TTS_PROVIDER=openai` and `OPENAI_API_KEY` are available
+   - `demo_video.html` as a local preview fallback when MP4 composition is incomplete
+   - `demo_video.mp4` only when recording, real audio, and `ffmpeg` are available
 
 ## Confidence Rules
 
 - Mark explicit documentation and config claims as `high`.
+- Treat README feature lists as enough evidence to generate a final plan when the project name, summary, and at least one feature are clear.
 - Mark route names, component names, package metadata, and clear code structure as `medium`.
 - Mark speculative product claims and guessed actions as `low`.
 - If important claims are low confidence, generate `demo_plan.draft.json`, explain what is missing, and avoid presenting the final video plan as certain.
+
+## README Parsing
+
+- Ignore badges, shield images, decorative image rows, raw URLs, and license/status metadata when extracting product summaries.
+- Prefer `DEMO_GUIDE.md` pitch, README blockquote summary, README overview/about/description sections, then package description.
+- Recognize decorated headings such as `## Features` with emoji or symbols by normalizing headings before matching.
+- Extract bullet lists under feature/capability/highlight headings as high-confidence features.
+- Extract numbered workflows under usage/how-to/demo/quick-start headings as medium-confidence demo flow hints.
+- Sanitize narration inputs before writing scripts; do not carry Markdown badges, image syntax, or raw URLs into voiceover text.
 
 ## Safety
 
@@ -68,8 +81,19 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 
 - Prefer a deployed `demoUrl` from config, `DEMO_GUIDE.md`, README, or the `--url` argument.
 - Use Playwright when available to inspect visible headings, buttons, links, forms, and capture screenshots or recordings.
+- Use conservative DOM heuristics to fill safe sample inputs, choose non-empty select options, and click common demo controls such as Add, Calculate, Method, Resources, New, or Create.
+- Register the canonical `.webm` recording path in `run_report.json`.
 - Do not force local project startup when run instructions are uncertain.
-- If Playwright, TTS, `ffmpeg`, or the app runtime is unavailable, still produce the written artifacts and a manual recording guide.
+- If Playwright, TTS, `ffmpeg`, or the app runtime is unavailable, still produce the written artifacts, partial deliverables, `demo_video.html`, and a manual recording guide.
+
+## Voiceover
+
+- Default to mock TTS mode with no API key.
+- To generate real audio, set `TTS_PROVIDER=openai` and `OPENAI_API_KEY`.
+- Optional variables: `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE`, `OPENAI_TTS_INSTRUCTIONS`, `TTS_VOICE`.
+- Write real audio to `output/voiceover.mp3`.
+- Never write API keys into generated files.
+- Disclose that generated voiceover is AI-generated when publishing the demo.
 
 ## Extending The Skill
 

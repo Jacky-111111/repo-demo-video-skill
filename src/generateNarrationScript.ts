@@ -1,14 +1,16 @@
 import type { DemoPlan } from "./types.js";
+import { cleanNarrationText } from "./sanitizeNarration.js";
 
 export function generateNarrationScript(plan: DemoPlan): string {
   const featureNarration = plan.selectedFeatures
     .map((feature, index) => {
+      const safeDescription = cleanNarrationText(feature.description);
       return `## Scene ${index + 2}: ${feature.name}
 
 Show ${feature.route ?? "the relevant screen"}.
 
 Narration:
-"${feature.description}"
+"${safeDescription}"
 
 Confidence: ${feature.confidence} (${feature.source})
 `;
@@ -19,16 +21,16 @@ Confidence: ${feature.confidence} (${feature.source})
 
 ## Scene 1: Opening
 
-"${plan.openingHook}"
+"${cleanNarrationText(plan.openingHook)}"
 
 ## Scene 1B: Introduction
 
-"${plan.projectName} is ${plan.tagline} It is designed for ${plan.targetAudience}"
+"${plan.projectName} is ${cleanNarrationText(plan.tagline)} It is designed for ${cleanNarrationText(plan.targetAudience)}"
 
 ${featureNarration}
 ## Closing
 
-"${plan.closingPitch}"
+"${cleanNarrationText(plan.closingPitch)}"
 
 ## Production Notes
 
