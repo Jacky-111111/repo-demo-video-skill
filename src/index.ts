@@ -6,7 +6,7 @@ import { composeVideo } from "./composeVideo.js";
 import { generateDemoPlan, renderManualRecordingGuide, renderProjectSummary, renderStoryboard } from "./generateDemoPlan.js";
 import { generateNarrationScript } from "./generateNarrationScript.js";
 import { generateVoiceover } from "./generateVoiceover.js";
-import { isProbablyGitHubUrl, writeJson, writeText } from "./fileUtils.js";
+import { createTimestampedOutputDir, isProbablyGitHubUrl, writeJson, writeText } from "./fileUtils.js";
 import { recordBrowserDemo } from "./recordBrowserDemo.js";
 import type { CliOptions, DemoMode } from "./types.js";
 
@@ -77,7 +77,7 @@ async function main(): Promise<void> {
   const analysis = await analyzeRepo(options);
   const plan = generateDemoPlan(analysis);
   const narrationScript = generateNarrationScript(plan);
-  const outputDir = path.join(analysis.repoPath, "output");
+  const outputDir = await createTimestampedOutputDir(analysis.repoPath);
 
   await writeText(path.join(outputDir, "project_summary.md"), renderProjectSummary(analysis, plan));
   await writeJson(path.join(outputDir, "demo_plan.draft.json"), plan);
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
     await writeJson(path.join(outputDir, "demo_plan.json"), plan);
   }
 
-  const voiceover = await generateVoiceover(narrationScript, outputDir);
+  const voiceover = await generateVoiceover(narrationScript, outputDir, options.mode === "full");
   const recording = options.mode === "draft"
     ? {
         attempted: false,

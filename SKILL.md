@@ -38,7 +38,7 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
    npm run demo -- --repo ./path-to-repo --mode full
    ```
 
-3. Review generated artifacts in `output/`:
+3. Review generated artifacts in a timestamped output folder such as `demoOutput-2026-05-10-143012/`:
    - `project_summary.md`
    - `demo_plan.draft.json`
 - `demo_plan.json` when confidence is high enough
@@ -71,7 +71,7 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 ## Safety
 
 - Keep repository analysis read-only.
-- Write generated artifacts only into `output/`.
+- Write generated artifacts only into a new timestamped `demoOutput-YYYY-MM-DD-HHMMSS/` folder in the target repository.
 - Do not delete files recursively or run destructive commands.
 - Do not run deployment commands.
 - Do not expose secrets, API keys, private tokens, `.env` values, private user data, or real credentials in narration, screenshots, or video.
@@ -91,7 +91,7 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 - Default to mock TTS mode with no API key.
 - To generate real audio, set `TTS_PROVIDER=openai` and `OPENAI_API_KEY`.
 - Optional variables: `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE`, `OPENAI_TTS_INSTRUCTIONS`, `TTS_VOICE`.
-- Write real audio to `output/voiceover.mp3`.
+- Write real audio to the current run folder, for example `demoOutput-2026-05-10-143012/voiceover.mp3`.
 - Never write API keys into generated files.
 - Disclose that generated voiceover is AI-generated when publishing the demo.
 

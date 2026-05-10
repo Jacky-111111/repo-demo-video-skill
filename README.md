@@ -90,6 +90,8 @@ Run draft mode when you only want repo analysis and written demo assets:
 npm run demo -- --repo ./path-to-repo --mode draft
 ```
 
+Draft mode does not call real TTS, even if `.env` contains an API key.
+
 ### 2. Browser recording: screenshots and `.webm`
 
 Required in addition to Node/npm:
@@ -113,17 +115,17 @@ npm run demo -- --repo ./path-to-repo --url https://example.com --mode full
 Browser recordings and screenshots are written under:
 
 ```text
-output/recordings/
+demoOutput-YYYY-MM-DD-HHMMSS/recordings/
 ```
 
-If Playwright or Chromium is missing, the CLI still generates the written artifacts and records the missing dependency in `output/run_report.json`.
+If Playwright or Chromium is missing, the CLI still generates the written artifacts and records the missing dependency in `demoOutput-YYYY-MM-DD-HHMMSS/run_report.json`.
 
 ### 3. Final MP4 composition
 
 Required in addition to browser recording:
 
 - `ffmpeg` available on `PATH`
-- a real voiceover audio file, such as `output/voiceover.mp3`
+- a real voiceover audio file, such as `demoOutput-YYYY-MM-DD-HHMMSS/voiceover.mp3`
 
 On Windows, install `ffmpeg` with one of:
 
@@ -141,10 +143,10 @@ Verify that `ffmpeg` is available:
 ffmpeg -version
 ```
 
-The recommended setup uses OpenAI TTS to create `output/voiceover.mp3`. If no API key is configured, the CLI falls back to mock voiceover mode: it writes the narration script and instructions, but does not create audio. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
+The recommended setup uses OpenAI TTS to create `voiceover.mp3` in the current run folder. If no API key is configured, the CLI falls back to mock voiceover mode: it writes the narration script and instructions, but does not create audio. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
 
 ```text
-output/video_composition_notes.md
+demoOutput-YYYY-MM-DD-HHMMSS/video_composition_notes.md
 ```
 
 ### Recommended full setup
@@ -195,12 +197,24 @@ Full mode:
 npm run demo -- --repo ./path-to-repo --mode full
 ```
 
+Use full mode when you want browser recording, real voiceover, and MP4 composition attempts.
+
 ## Output Files
 
-Generated files are written to the target repository's `output/` folder:
+Generated files are written to a fresh timestamped folder in the target repository. Each run gets a new folder, so previous videos and plans are not overwritten.
+
+Example folder name:
 
 ```text
-output/
+demoOutput-2026-05-10-143012/
+```
+
+If a folder with the same timestamp already exists, the CLI appends a suffix such as `-01` to keep the run unique.
+
+Expected contents:
+
+```text
+demoOutput-YYYY-MM-DD-HHMMSS/
 |-- project_summary.md
 |-- demo_plan.draft.json
 |-- demo_plan.json
@@ -222,7 +236,7 @@ output/
 
 ## Real Voiceover
 
-For the best result, configure OpenAI TTS in a local `.env` file so the CLI can generate `output/voiceover.mp3`. Mock mode is only a fallback for missing API configuration; it keeps the workflow running but does not create real audio.
+For the best result, configure OpenAI TTS in a local `.env` file so the CLI can generate `voiceover.mp3` in the current timestamped run folder. Mock mode is only a fallback for missing API configuration; it keeps the workflow running but does not create real audio.
 
 ### Option A: local `.env` file
 
@@ -275,7 +289,7 @@ $env:OPENAI_TTS_INSTRUCTIONS="Speak like a polished product demo narrator."
 The generated audio is written to:
 
 ```text
-output/voiceover.mp3
+demoOutput-YYYY-MM-DD-HHMMSS/voiceover.mp3
 ```
 
 API keys are read only from environment variables or the local `.env` file and are never written into generated artifacts. `.env` and `.env.*` are ignored by git; `.env.example` is intentionally tracked as a safe template. When publishing generated voiceover, disclose that the voice is AI-generated.
@@ -363,7 +377,7 @@ The analyzer handles ordinary project READMEs more robustly now:
 The skill is conservative by design:
 
 - prefers read-only repository analysis
-- writes generated artifacts only to `output/`
+- writes generated artifacts only to a fresh timestamped `demoOutput-YYYY-MM-DD-HHMMSS/` folder
 - treats `demo.config` as optional
 - avoids destructive commands
 - avoids deployment commands

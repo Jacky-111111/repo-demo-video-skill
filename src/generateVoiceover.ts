@@ -15,7 +15,11 @@ function narrationOnly(markdownScript: string): string {
   return narrationLines.join("\n\n");
 }
 
-function selectProvider(): { provider: TtsProvider; name: "mock" | "openai" } {
+function selectProvider(allowRealTts: boolean): { provider: TtsProvider; name: "mock" | "openai" } {
+  if (!allowRealTts) {
+    return { provider: new MockTtsProvider(), name: "mock" };
+  }
+
   const requested = (process.env.TTS_PROVIDER || "mock").toLowerCase();
   if (requested === "openai") {
     return { provider: new OpenAiTtsProvider(), name: "openai" };
@@ -23,12 +27,12 @@ function selectProvider(): { provider: TtsProvider; name: "mock" | "openai" } {
   return { provider: new MockTtsProvider(), name: "mock" };
 }
 
-export async function generateVoiceover(narrationScript: string, outputDir: string): Promise<VoiceoverResult> {
+export async function generateVoiceover(narrationScript: string, outputDir: string, allowRealTts = true): Promise<VoiceoverResult> {
   const scriptPath = path.join(outputDir, "voiceover_script.txt");
   const instructionsPath = path.join(outputDir, "voiceover_instructions.md");
   const audioPath = path.join(outputDir, "voiceover.mp3");
   const text = narrationOnly(narrationScript);
-  const { provider, name } = selectProvider();
+  const { provider, name } = selectProvider(allowRealTts);
 
   await writeText(scriptPath, text || narrationScript);
   await writeText(
@@ -36,6 +40,8 @@ export async function generateVoiceover(narrationScript: string, outputDir: stri
     `# Voiceover Instructions
 
 Current provider: ${name}
+
+Real TTS enabled for this run: ${allowRealTts ? "yes" : "no"}
 
 To generate real TTS with OpenAI:
 

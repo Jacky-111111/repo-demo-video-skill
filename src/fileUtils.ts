@@ -15,6 +15,44 @@ const IGNORED_DIRS = new Set([
   "test-results"
 ]);
 
+function isIgnoredDir(name: string): boolean {
+  return IGNORED_DIRS.has(name) || /^demoOutput-\d{4}-\d{2}-\d{2}-\d{6}(?:-\d+)?$/.test(name);
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+export function formatLocalTimestamp(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  const second = pad(date.getSeconds());
+  return `${year}-${month}-${day}-${hour}${minute}${second}`;
+}
+
+export async function createTimestampedOutputDir(repoPath: string, date = new Date()): Promise<string> {
+  const baseName = `demoOutput-${formatLocalTimestamp(date)}`;
+
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const suffix = attempt === 0 ? "" : `-${pad(attempt)}`;
+    const candidate = path.join(repoPath, `${baseName}${suffix}`);
+    try {
+      await mkdir(candidate, { recursive: false });
+      return candidate;
+    } catch (error) {
+      const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+      if (code !== "EEXIST") {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error(`Could not create a unique output directory for ${baseName}`);
+}
+
 export async function pathExists(target: string): Promise<boolean> {
   try {
     await stat(target);
@@ -66,7 +104,7 @@ export async function listFiles(root: string, maxFiles = 600): Promise<string[]>
 
       const absolute = path.join(current, entry.name);
       if (entry.isDirectory()) {
-        if (!IGNORED_DIRS.has(entry.name)) {
+        if (!isIgnoredDir(entry.name)) {
           await walk(absolute);
         }
       } else if (entry.isFile()) {

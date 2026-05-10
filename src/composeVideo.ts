@@ -99,7 +99,7 @@ ${warnings.map((warning) => `- ${warning}`).join("\n")}
 - Voiceover audio: ${audio ?? "not available"}
 - Local preview page: ${playbackHtml}
 
-Add the missing dependency or artifact, then rerun in full mode to compose output/demo_video.mp4.
+Add the missing dependency or artifact, then rerun in full mode to compose demo_video.mp4 in a new demoOutput timestamp folder.
 `
     );
     return {
