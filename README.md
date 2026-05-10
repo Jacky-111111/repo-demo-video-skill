@@ -15,7 +15,8 @@ The skill analyzes a local project folder and generates:
 - a storyboard
 - a manual recording guide
 - optional browser screenshots or recordings
-- optional video composition notes or `demo_video.mp4`
+- optional OpenAI TTS voiceover
+- optional video composition notes, `demo_video.html`, or `demo_video.mp4`
 
 The workflow is intentionally graceful. If automation cannot safely run the app or record the browser, the written demo artifacts are still produced.
 
@@ -89,6 +90,8 @@ Run draft mode when you only want repo analysis and written demo assets:
 npm run demo -- --repo ./path-to-repo --mode draft
 ```
 
+Draft mode does not call real TTS, even if `.env` contains an API key.
+
 ### 2. Browser recording: screenshots and `.webm`
 
 Required in addition to Node/npm:
@@ -112,17 +115,17 @@ npm run demo -- --repo ./path-to-repo --url https://example.com --mode full
 Browser recordings and screenshots are written under:
 
 ```text
-output/recordings/
+demoOutput-YYYY-MM-DD-HHMMSS/recordings/
 ```
 
-If Playwright or Chromium is missing, the CLI still generates the written artifacts and records the missing dependency in `output/run_report.json`.
+If Playwright or Chromium is missing, the CLI still generates the written artifacts and records the missing dependency in `demoOutput-YYYY-MM-DD-HHMMSS/run_report.json`.
 
 ### 3. Final MP4 composition
 
 Required in addition to browser recording:
 
 - `ffmpeg` available on `PATH`
-- a real voiceover audio file, such as `output/voiceover.mp3`
+- a real voiceover audio file, such as `demoOutput-YYYY-MM-DD-HHMMSS/voiceover.mp3`
 
 On Windows, install `ffmpeg` with one of:
 
@@ -140,10 +143,10 @@ Verify that `ffmpeg` is available:
 ffmpeg -version
 ```
 
-The current MVP voiceover module runs in mock mode. It writes the narration script and instructions, but does not call a TTS provider or create real audio automatically. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
+The recommended setup uses OpenAI TTS to create `voiceover.mp3` in the current run folder. If no API key is configured, the CLI falls back to mock voiceover mode: it writes the narration script and instructions, but does not create audio. Without real audio, final narrated MP4 composition is skipped gracefully and notes are written to:
 
 ```text
-output/video_composition_notes.md
+demoOutput-YYYY-MM-DD-HHMMSS/video_composition_notes.md
 ```
 
 ### Recommended full setup
@@ -194,24 +197,104 @@ Full mode:
 npm run demo -- --repo ./path-to-repo --mode full
 ```
 
+Use full mode when you want browser recording, real voiceover, and MP4 composition attempts.
+
 ## Output Files
 
-Generated files are written to the target repository's `output/` folder:
+Generated files are written to a fresh timestamped folder in the target repository. Each run gets a new folder, so previous videos and plans are not overwritten.
+
+Example folder name:
 
 ```text
-output/
-├── project_summary.md
-├── demo_plan.draft.json
-├── demo_plan.json
-├── narration_script.md
-├── demo_storyboard.md
-├── manual_recording_guide.md
-├── run_report.json
-├── recordings/
-└── demo_video.mp4
+demoOutput-2026-05-10-143012/
 ```
 
-`demo_plan.json` is only written when confidence is high enough. `demo_video.mp4` is only written when browser recording, real voiceover audio, and `ffmpeg` are available.
+If a folder with the same timestamp already exists, the CLI appends a suffix such as `-01` to keep the run unique.
+
+Expected contents:
+
+```text
+demoOutput-YYYY-MM-DD-HHMMSS/
+|-- project_summary.md
+|-- demo_plan.draft.json
+|-- demo_plan.json
+|-- narration_script.md
+|-- demo_storyboard.md
+|-- manual_recording_guide.md
+|-- run_report.json
+|-- voiceover_script.txt
+|-- voiceover.mp3
+|-- demo_video.html
+|-- screenshots/
+|-- recordings/
+`-- demo_video.mp4
+```
+
+`demo_plan.json` is written when confidence is high enough. A clear README feature list is enough evidence for a final plan even without `DEMO_GUIDE.md` or `demo.config`.
+
+`demo_video.mp4` is only written when browser recording, real voiceover audio, and `ffmpeg` are available. If MP4 composition is incomplete, `run_report.json` records the status as `partial`, `skipped`, or `failed`, and `demo_video.html` provides a local preview of the browser recording, audio, and screenshots.
+
+## Real Voiceover
+
+For the best result, configure OpenAI TTS in a local `.env` file so the CLI can generate `voiceover.mp3` in the current timestamped run folder. Mock mode is only a fallback for missing API configuration; it keeps the workflow running but does not create real audio.
+
+### Option A: local `.env` file
+
+For day-to-day use, create a local `.env` file in this project root:
+
+```text
+D:\GitHub_Repos\repo-demo-video-skill\.env
+```
+
+Start from the template:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Then edit `.env`:
+
+```env
+TTS_PROVIDER=openai
+OPENAI_API_KEY=sk-your-api-key-here
+OPENAI_TTS_MODEL=gpt-4o-mini-tts
+OPENAI_TTS_VOICE=coral
+OPENAI_TTS_INSTRUCTIONS=Speak like a polished product demo narrator: clear, warm, concise, and confident.
+```
+
+Replace `sk-your-api-key-here` with your real local API key. The CLI loads `.env` automatically through `dotenv/config`, so after creating the local file you can run:
+
+```powershell
+npm run demo -- --repo D:\path\to\your-project --mode full
+```
+
+### Option B: temporary terminal variables
+
+You can also set variables only for the current PowerShell session:
+
+```powershell
+$env:TTS_PROVIDER="openai"
+$env:OPENAI_API_KEY="your_api_key"
+npm run demo -- --repo D:\path\to\your-project --mode full
+```
+
+Optional variables:
+
+```powershell
+$env:OPENAI_TTS_MODEL="gpt-4o-mini-tts"
+$env:OPENAI_TTS_VOICE="coral"
+$env:OPENAI_TTS_INSTRUCTIONS="Speak like a polished product demo narrator."
+```
+
+The generated audio is written to:
+
+```text
+demoOutput-YYYY-MM-DD-HHMMSS/voiceover.mp3
+```
+
+API keys are read only from environment variables or the local `.env` file and are never written into generated artifacts. `.env` and `.env.*` are ignored by git; `.env.example` is intentionally tracked as a safe template. When publishing generated voiceover, disclose that the voice is AI-generated.
+
+If `TTS_PROVIDER` is missing, set to `mock`, or `OPENAI_API_KEY` is not set, the CLI uses mock fallback. In that case it still writes `voiceover_script.txt`, but it does not create `voiceover.mp3`.
 
 ## DEMO_GUIDE.md
 
@@ -278,18 +361,41 @@ Every important inferred item receives one of:
 
 If the plan contains important low-confidence assumptions, the CLI writes `demo_plan.draft.json` and explains what needs confirmation instead of pretending certainty.
 
+## README Parsing
+
+The analyzer handles ordinary project READMEs more robustly now:
+
+- skips badges, shield images, decorative rows, raw links, and status metadata
+- recognizes decorated headings like `## Features` with emoji or symbols
+- extracts feature bullets under feature/capability/highlight headings
+- extracts usage workflow steps under usage/how-to/demo/quick-start headings
+- prefers clean blockquotes and overview/about/description text for summaries
+- sanitizes narration text before writing scripts or TTS input
+
+## Demo Visual Guidance
+
+Browser recordings use temporary Playwright-injected overlays to make the demo easier to follow without modifying the target app source code:
+
+- `#codex-demo-callout`: a bottom caption for the current narration beat
+- `#codex-demo-ring`: a yellow highlight ring around the active UI element or result area
+
+These overlays use fixed positioning, high `z-index`, and `pointer-events: none`. They only exist inside the recording browser session and disappear when recording ends.
+
+Overlays must not fabricate functionality. They should only guide viewer attention toward real UI state changes.
+
 ## Safety Model
 
 The skill is conservative by design:
 
 - prefers read-only repository analysis
-- writes generated artifacts only to `output/`
+- writes generated artifacts only to a fresh timestamped `demoOutput-YYYY-MM-DD-HHMMSS/` folder
 - treats `demo.config` as optional
 - avoids destructive commands
 - avoids deployment commands
 - does not expose secrets, API keys, `.env` values, private tokens, private user data, or credentials
 - does not include real passwords in narration or video
 - skips local startup when run commands are uncertain
+- records partial video deliverables clearly when MP4 composition is unavailable
 
 ## MVP Scope
 
@@ -304,16 +410,18 @@ Implemented now:
 - demo plan draft generation
 - narration script generation
 - storyboard and manual recording guide
-- Playwright browser capture when a URL is available
+- Playwright browser capture and conservative DOM exploration when a URL is available
+- temporary callout and highlight overlays for clearer browser demos
 - mock voiceover module
-- graceful `ffmpeg` composition notes
+- OpenAI TTS voiceover via environment variables
+- graceful `ffmpeg` composition notes and `demo_video.html` fallback
 
 Planned extensions:
 
 - GitHub repo URL cloning
 - safer automatic local app startup
 - deeper browser interaction
-- real OpenAI TTS or ElevenLabs integration
+- ElevenLabs or local TTS integration
 - captions
 - multiple video styles
 - automatic feature discovery from UI exploration

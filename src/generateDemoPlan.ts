@@ -52,13 +52,13 @@ function overallConfidence(analysis: RepoAnalysis): DemoPlan["confidenceSummary"
   if (!analysis.metadata.readmePath) {
     reasons.push("README.md is missing, reducing product-story confidence.");
   }
-  if (!analysis.config.config && !analysis.guide.path) {
-    reasons.push("No DEMO_GUIDE.md or demo.config file is available.");
+  if (!analysis.config.config && !analysis.guide.path && !analysis.metadata.readme.features.length) {
+    reasons.push("No DEMO_GUIDE.md, demo.config file, or README feature list is available.");
   }
 
   return {
     overall,
-    shouldGenerateFinalPlan: overall !== "low" && selected.length > 0,
+    shouldGenerateFinalPlan: selected.length > 0 && selected.some((feature) => feature.confidence !== "low") && Boolean(analysis.metadata.readmePath || analysis.guide.path || analysis.config.config),
     reasons: reasons.length ? reasons : ["The selected claims are supported by explicit documentation or clear repository structure."]
   };
 }

@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { ProjectMetadata } from "./types.js";
-import { extractUrls, listFiles, normalizeWhitespace, pathExists, readTextIfExists } from "./fileUtils.js";
+import { listFiles, pathExists, readTextIfExists } from "./fileUtils.js";
+import { parseReadme } from "./parseReadme.js";
 
 const FRAMEWORK_FILES = [
   "next.config.js",
@@ -15,21 +16,6 @@ const FRAMEWORK_FILES = [
   "nuxt.config.ts",
   "remix.config.js"
 ];
-
-function extractReadmeTitle(readme: string): string | undefined {
-  const title = readme.match(/^#\s+(.+?)\s*$/m)?.[1];
-  return title ? normalizeWhitespace(title) : undefined;
-}
-
-function extractReadmeSummary(readme: string): string | undefined {
-  const withoutTitle = readme.replace(/^#\s+.+?\s*$/m, "");
-  const paragraph = withoutTitle
-    .split(/\n\s*\n/)
-    .map((block) => normalizeWhitespace(block.replace(/[#>*`]/g, "")))
-    .find((block) => block.length > 40 && !block.toLowerCase().startsWith("installation"));
-
-  return paragraph;
-}
 
 function detectFrameworks(packageJson: Record<string, unknown>, frameworkFiles: string[]): string[] {
   const deps = {
@@ -73,6 +59,8 @@ export async function discoverProjectMetadata(repoPath: string): Promise<Project
     }
   }
 
+  const readme = parseReadme(readmeRaw, readmePath);
+
   return {
     repoPath,
     packageName: typeof packageJson.name === "string" ? packageJson.name : undefined,
@@ -82,9 +70,10 @@ export async function discoverProjectMetadata(repoPath: string): Promise<Project
       : {},
     packageKeywords: Array.isArray(packageJson.keywords) ? packageJson.keywords.filter((item): item is string => typeof item === "string") : [],
     readmePath: readmeRaw ? readmePath : undefined,
-    readmeTitle: readmeRaw ? extractReadmeTitle(readmeRaw) : undefined,
-    readmeSummary: readmeRaw ? extractReadmeSummary(readmeRaw) : undefined,
-    readmeUrls: readmeRaw ? extractUrls(readmeRaw) : [],
+    readmeTitle: readme.title,
+    readmeSummary: readme.summary,
+    readmeUrls: readme.urls,
+    readme,
     frameworks: detectFrameworks(packageJson, frameworkFiles),
     frameworkFiles,
     sourceFiles

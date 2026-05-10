@@ -10,7 +10,7 @@ export interface Evidence<T> {
 }
 
 export interface DemoAction {
-  type: "click" | "type" | "visit" | "wait" | "assert-visible";
+  type: "click" | "type" | "select" | "visit" | "wait" | "assert-visible";
   selector?: string;
   text?: string;
   route?: string;
@@ -67,6 +67,24 @@ export interface DemoGuide {
   hasTestAccount: boolean;
 }
 
+export interface ReadmeFeature {
+  name: string;
+  description: string;
+  sourceHeading: string;
+}
+
+export interface ReadmeAnalysis {
+  path?: string;
+  title?: string;
+  summary?: string;
+  blockquoteSummary?: string;
+  sections: Record<string, string>;
+  features: ReadmeFeature[];
+  usageSteps: string[];
+  urls: string[];
+  warnings: string[];
+}
+
 export interface ProjectMetadata {
   repoPath: string;
   packageName?: string;
@@ -77,6 +95,7 @@ export interface ProjectMetadata {
   readmeTitle?: string;
   readmeSummary?: string;
   readmeUrls: string[];
+  readme: ReadmeAnalysis;
   frameworks: string[];
   frameworkFiles: string[];
   sourceFiles: string[];
@@ -151,6 +170,7 @@ export interface BrowserRecordingResult {
   attempted: boolean;
   success: boolean;
   artifacts: string[];
+  canonicalVideo?: string;
   observations: string[];
   warnings: string[];
 }
@@ -158,12 +178,20 @@ export interface BrowserRecordingResult {
 export interface VoiceoverResult {
   success: boolean;
   mockMode: boolean;
+  provider: "mock" | "openai";
   artifacts: string[];
   warnings: string[];
 }
 
 export interface VideoCompositionResult {
+  status: "complete" | "partial" | "skipped" | "failed";
   success: boolean;
   artifact?: string;
+  deliverables: {
+    browserRecordingWebm?: string;
+    voiceoverAudio?: string;
+    narratedMp4?: string;
+    playbackHtml?: string;
+  };
   warnings: string[];
 }

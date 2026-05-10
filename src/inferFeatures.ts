@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { DemoConfig, DemoFeature, DemoGuide, InferredRoute, ProjectMetadata } from "./types.js";
-import { confidenceRank, normalizeWhitespace, readTextIfExists, titleFromSlug, uniqueBy } from "./fileUtils.js";
+import { confidenceRank, normalizeWhitespace, titleFromSlug, uniqueBy } from "./fileUtils.js";
 
 function importanceFromIndex(index: number): "high" | "medium" | "low" {
   if (index < 3) return "high";
@@ -13,37 +13,26 @@ function routeForFeature(name: string, routes: InferredRoute[]): string | undefi
   return routes.find((route) => normalized.includes(route.route.replace("/", "").toLowerCase()))?.route;
 }
 
-async function featuresFromReadme(metadata: ProjectMetadata, routes: InferredRoute[]): Promise<DemoFeature[]> {
-  if (!metadata.readmePath) {
-    return [];
-  }
+function featuresFromReadme(metadata: ProjectMetadata, routes: InferredRoute[]): DemoFeature[] {
+  return metadata.readme.features.map((feature, index) => ({
+    name: feature.name,
+    description: feature.description,
+    importance: importanceFromIndex(index),
+    confidence: "high",
+    source: `README.md ${feature.sourceHeading} section`,
+    route: routeForFeature(feature.name, routes)
+  }));
+}
 
-  const readme = await readTextIfExists(metadata.readmePath);
-  if (!readme) {
-    return [];
-  }
-
-  const featureSection = readme.match(/^##\s+(?:features|key features|what it does|capabilities)\s*$([\s\S]*?)(?=^##\s+|\s*$)/im)?.[1];
-  if (!featureSection) {
-    return [];
-  }
-
-  return featureSection
-    .split(/\r?\n/)
-    .map((line) => line.replace(/^\s*(?:[-*]|\d+[.)])\s+/, "").trim())
-    .filter((line) => line.length > 4 && line.length < 180)
-    .slice(0, 8)
-    .map((line, index) => {
-      const name = normalizeWhitespace(line.split(/[:.]/)[0] ?? line);
-      return {
-        name,
-        description: normalizeWhitespace(line),
-        importance: importanceFromIndex(index),
-        confidence: "high" as const,
-        source: "README.md feature section",
-        route: routeForFeature(name, routes)
-      };
-    });
+function usageFeaturesFromReadme(metadata: ProjectMetadata, routes: InferredRoute[]): DemoFeature[] {
+  return metadata.readme.usageSteps.slice(0, 5).map((step, index) => ({
+    name: normalizeWhitespace(step.split(/[:.]/)[0] ?? `Step ${index + 1}`).slice(0, 80),
+    description: step,
+    importance: importanceFromIndex(index),
+    confidence: "medium",
+    source: "README.md usage workflow",
+    route: routeForFeature(step, routes)
+  }));
 }
 
 export async function inferFeatures(
@@ -75,7 +64,8 @@ export async function inferFeatures(
     });
   }
 
-  features.push(...(await featuresFromReadme(metadata, routes)));
+  features.push(...featuresFromReadme(metadata, routes));
+  features.push(...usageFeaturesFromReadme(metadata, routes));
 
   for (const route of routes.slice(0, 8)) {
     const name = route.route === "/" ? "Homepage" : titleFromSlug(path.basename(route.route));
