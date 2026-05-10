@@ -372,6 +372,17 @@ The analyzer handles ordinary project READMEs more robustly now:
 - prefers clean blockquotes and overview/about/description text for summaries
 - sanitizes narration text before writing scripts or TTS input
 
+## Demo Visual Guidance
+
+Browser recordings use temporary Playwright-injected overlays to make the demo easier to follow without modifying the target app source code:
+
+- `#codex-demo-callout`: a bottom caption for the current narration beat
+- `#codex-demo-ring`: a yellow highlight ring around the active UI element or result area
+
+These overlays use fixed positioning, high `z-index`, and `pointer-events: none`. They only exist inside the recording browser session and disappear when recording ends.
+
+Overlays must not fabricate functionality. They should only guide viewer attention toward real UI state changes.
+
 ## Safety Model
 
 The skill is conservative by design:
@@ -400,6 +411,7 @@ Implemented now:
 - narration script generation
 - storyboard and manual recording guide
 - Playwright browser capture and conservative DOM exploration when a URL is available
+- temporary callout and highlight overlays for clearer browser demos
 - mock voiceover module
 - OpenAI TTS voiceover via environment variables
 - graceful `ffmpeg` composition notes and `demo_video.html` fallback

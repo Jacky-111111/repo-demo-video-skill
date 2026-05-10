@@ -86,6 +86,19 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 - Do not force local project startup when run instructions are uncertain.
 - If Playwright, TTS, `ffmpeg`, or the app runtime is unavailable, still produce the written artifacts, partial deliverables, `demo_video.html`, and a manual recording guide.
 
+## Demo Visual Guidance
+
+For polished browser recordings, inject temporary non-persistent visual guidance overlays through Playwright rather than editing app source code.
+
+Use:
+
+- A subtle callout caption for the current narration beat.
+- A highlight ring around the active UI element or result area.
+- High `z-index`, `pointer-events: none`, and fixed positioning.
+- Neutral styling that does not obscure the product UI.
+
+Do not use overlays to fabricate functionality. Use them only to guide viewer attention toward real UI state changes. The overlays must exist only in the recording browser session and disappear when the session closes.
+
 ## Voiceover
 
 - Default to mock TTS mode with no API key.
