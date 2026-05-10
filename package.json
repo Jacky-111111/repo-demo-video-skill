@@ -1,0 +1,36 @@
+{
+  "name": "repo-demo-video-skill",
+  "version": "0.1.0",
+  "description": "An AI coding agent skill that turns a repository into a narrated product demo video plan and optional browser recording.",
+  "type": "module",
+  "bin": {
+    "repo-demo-video": "./dist/index.js"
+  },
+  "scripts": {
+    "demo": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "codex-skill",
+    "ai-demo",
+    "product-demo",
+    "playwright",
+    "video"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "yaml": "^2.7.0"
+  },
+  "optionalDependencies": {
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

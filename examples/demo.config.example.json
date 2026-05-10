@@ -1,0 +1,42 @@
+{
+  "projectName": "CarbonTrack",
+  "tagline": "Track and reward carbon reduction habits",
+  "demoUrl": "https://example.com",
+  "run": {
+    "install": "npm install",
+    "start": "npm run dev",
+    "localUrl": "http://localhost:3000"
+  },
+  "features": [
+    {
+      "name": "Carbon Logging",
+      "description": "Users can log eco-friendly actions and convert them into carbon credits.",
+      "route": "/log",
+      "importance": "high",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "button",
+          "text": "Add Action"
+        },
+        {
+          "type": "type",
+          "selector": "textarea",
+          "text": "Brought a reusable water bottle"
+        }
+      ]
+    }
+  ],
+  "demoFlow": [
+    "homepage",
+    "carbon logging",
+    "leaderboard",
+    "closing"
+  ],
+  "video": {
+    "durationSeconds": 90,
+    "voice": "professional",
+    "style": "startup product demo",
+    "includeSubtitles": true
+  }
+}
