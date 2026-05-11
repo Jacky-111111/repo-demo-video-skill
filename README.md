@@ -82,6 +82,7 @@ This is enough to generate:
 - `narration_script.draft.md`
 - `narration_script.md`
 - `script_quality_report.json`
+- `timing_plan.json`
 - `demo_storyboard.md`
 - `manual_recording_guide.md`
 - `run_report.json`
@@ -232,6 +233,7 @@ demoOutput-YYYY-MM-DD-HHMMSS/
 |-- narration_script.draft.md
 |-- narration_script.md
 |-- script_quality_report.json
+|-- timing_plan.json
 |-- demo_storyboard.md
 |-- manual_recording_guide.md
 |-- run_report.json
@@ -254,6 +256,8 @@ When both browser recording and voiceover audio exist, final MP4 composition use
 The CLI can use OpenAI to turn the analyzed repository, demo plan, README summary, inferred features, route hints, and browser observations into a more polished product demo narration.
 
 The script writer uses the OpenAI Responses API with the same `OPENAI_API_KEY` used for TTS. If no API key is configured, the CLI falls back to the deterministic template script.
+
+Before writing the script, the CLI creates `timing_plan.json` from the number of showable features and browser scenes. The timing plan sets the target video duration, word budget, scene count, and per-scene duration. The LLM prompt uses that plan so the script does not become much longer than the available visuals.
 
 Recommended `.env` settings:
 
@@ -278,6 +282,7 @@ OPENAI_SCRIPT_MODEL=gpt-5.5
 
 Script outputs:
 
+- `timing_plan.json`: target duration, scene count, and narration word budget
 - `narration_script.draft.md`: deterministic fallback draft
 - `narration_script.md`: final script, either LLM-written or fallback
 - `script_quality_report.json`: provider, model, fallback reason, and quality gate warnings
@@ -446,6 +451,8 @@ These overlays use fixed positioning, high `z-index`, and `pointer-events: none`
 
 Overlays must not fabricate functionality. They should only guide viewer attention toward real UI state changes.
 
+Recording pacing follows `timing_plan.json` when available. Each planned browser scene stays on screen for its allocated duration, and heuristic clicks or input changes pause briefly so viewers can see the state change.
+
 ## Safety Model
 
 The skill is conservative by design:
@@ -473,6 +480,7 @@ Implemented now:
 - route and component inference
 - confidence-scored feature inference
 - demo plan draft generation
+- timing plan generation based on showable features and browser scenes
 - template and OpenAI-backed professional narration script generation
 - storyboard and manual recording guide
 - Playwright browser capture and conservative DOM exploration when a URL is available

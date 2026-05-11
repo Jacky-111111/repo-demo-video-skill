@@ -159,6 +159,26 @@ export interface DemoPlan {
   sources: string[];
 }
 
+export interface SceneTiming {
+  title: string;
+  durationSeconds: number;
+  maxNarrationWords: number;
+}
+
+export interface VideoTimingPlan {
+  targetDurationSeconds: number;
+  minDurationSeconds: number;
+  maxDurationSeconds: number;
+  targetNarrationWords: number;
+  minNarrationWords: number;
+  maxNarrationWords: number;
+  spokenWordsPerSecond: number;
+  sceneCount: number;
+  featuresToCover: number;
+  sceneTimings: SceneTiming[];
+  pacingWarnings: string[];
+}
+
 export interface CliOptions {
   repo: string;
   config?: string;

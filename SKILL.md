@@ -45,6 +45,7 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
    - `narration_script.draft.md`
    - `narration_script.md`
    - `script_quality_report.json`
+   - `timing_plan.json`
    - `demo_storyboard.md`
    - `manual_recording_guide.md`
    - `recordings/` when browser capture succeeds
@@ -95,12 +96,13 @@ Treat `README.md` plus source code as the primary source, `DEMO_GUIDE.md` as the
 ## Professional Script Writing
 
 - Use the deterministic draft as a fallback, but prefer the OpenAI script writer when `SCRIPT_PROVIDER=openai` and `OPENAI_API_KEY` are set.
+- Generate `timing_plan.json` before writing the final script. Base it on available features, browser scenes, configured video duration, and pacing warnings.
 - Use the same `OPENAI_API_KEY` for script writing and OpenAI TTS.
 - Control the product-demo writing prompt in `src/prompts/demoNarrationPrompt.ts`.
 - Control the OpenAI Responses API model with `OPENAI_SCRIPT_MODEL`; if unset, fall back to `OPENAI_MODEL`, then `gpt-5.4-mini`.
 - Write `narration_script.draft.md` for the template draft and `narration_script.md` for the final LLM or fallback script.
 - Write `script_quality_report.json` with provider, model, fallback reason, and quality gate warnings.
-- The prompt should make the scriptwriter understand the product first, avoid badges and raw README metadata, focus on audience/problem/value, and use conservative wording for uncertain claims.
+- The prompt should make the scriptwriter understand the product first, avoid badges and raw README metadata, focus on audience/problem/value, use conservative wording for uncertain claims, and respect the timing plan's scene count and word budget.
 
 ## Demo Visual Guidance
 

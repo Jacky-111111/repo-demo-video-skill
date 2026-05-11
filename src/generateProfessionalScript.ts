@@ -1,4 +1,4 @@
-import type { BrowserRecordingResult, DemoPlan, RepoAnalysis } from "./types.js";
+import type { BrowserRecordingResult, DemoPlan, RepoAnalysis, VideoTimingPlan } from "./types.js";
 import { generateNarrationScript } from "./generateNarrationScript.js";
 import { OpenAiTextProvider } from "./llm.js";
 import { buildDemoNarrationPrompt } from "./prompts/demoNarrationPrompt.js";
@@ -41,6 +41,7 @@ function shouldUseOpenAiScriptWriter(): boolean {
 export async function generateProfessionalScript(
   analysis: RepoAnalysis,
   plan: DemoPlan,
+  timingPlan: VideoTimingPlan,
   recording?: BrowserRecordingResult
 ): Promise<ProfessionalScriptResult> {
   const draftScript = generateNarrationScript(plan);
@@ -60,7 +61,7 @@ export async function generateProfessionalScript(
     };
   }
 
-  const { instructions, userInput } = buildDemoNarrationPrompt({ analysis, plan, recording });
+  const { instructions, userInput } = buildDemoNarrationPrompt({ analysis, plan, timingPlan, recording });
   const provider = new OpenAiTextProvider();
   const result = await provider.generate({
     instructions,

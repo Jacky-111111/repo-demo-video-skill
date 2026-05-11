@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { BrowserRecordingResult, DemoPlan } from "./types.js";
+import type { BrowserRecordingResult, DemoPlan, VideoTimingPlan } from "./types.js";
 import { ensureDir } from "./fileUtils.js";
 
 function urlForRoute(baseUrl: string, route?: string): string {
@@ -9,7 +9,6 @@ function urlForRoute(baseUrl: string, route?: string): string {
   return new URL(route.replace(/^\//, ""), baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`).toString();
 }
 
-const SCENE_HOLD_MS = 8_000;
 const ACTION_HOLD_MS = 2_500;
 
 async function setDemoCallout(page: import("playwright").Page, message: string): Promise<void> {
@@ -218,7 +217,17 @@ async function performHeuristicDemo(page: import("playwright").Page, screenshots
   return { artifacts, observations };
 }
 
-export async function recordBrowserDemo(baseUrl: string | undefined, plan: DemoPlan, outputDir: string): Promise<BrowserRecordingResult> {
+function sceneHoldMs(timingPlan: VideoTimingPlan | undefined, sceneIndex: number): number {
+  const timedScene = timingPlan?.sceneTimings[sceneIndex + 1];
+  return Math.round((timedScene?.durationSeconds ?? 8) * 1000);
+}
+
+export async function recordBrowserDemo(
+  baseUrl: string | undefined,
+  plan: DemoPlan,
+  outputDir: string,
+  timingPlan?: VideoTimingPlan
+): Promise<BrowserRecordingResult> {
   if (!baseUrl) {
     return {
       attempted: false,
@@ -276,7 +285,7 @@ export async function recordBrowserDemo(baseUrl: string | undefined, plan: DemoP
         await clearDemoRing(page);
       }
 
-      await page.waitForTimeout(SCENE_HOLD_MS);
+      await page.waitForTimeout(sceneHoldMs(timingPlan, index));
       artifacts.push(await screenshot(page, screenshotsDir, `scene-${index + 1}-${step.title}`));
     }
 

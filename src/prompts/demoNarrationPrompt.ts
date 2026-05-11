@@ -1,9 +1,10 @@
-import type { BrowserRecordingResult, DemoPlan, RepoAnalysis } from "../types.js";
+import type { BrowserRecordingResult, DemoPlan, RepoAnalysis, VideoTimingPlan } from "../types.js";
 import { cleanNarrationText } from "../sanitizeNarration.js";
 
 export interface DemoNarrationPromptInput {
   analysis: RepoAnalysis;
   plan: DemoPlan;
+  timingPlan: VideoTimingPlan;
   recording?: BrowserRecordingResult;
 }
 
@@ -52,14 +53,18 @@ function compactAnalysis(input: DemoNarrationPromptInput): unknown {
       }))
     })),
     browserObservations: recording?.observations ?? [],
+    timingPlan: input.timingPlan,
     missingInformation: plan.missingInformation
   };
 }
 
 export function buildDemoNarrationPrompt(input: DemoNarrationPromptInput): { instructions: string; userInput: string } {
-  const targetDuration = input.analysis.config.config?.video?.durationSeconds ?? 90;
+  const targetDuration = input.timingPlan.targetDurationSeconds;
   const style = input.analysis.config.config?.video?.style ?? "polished startup product demo";
   const voice = input.analysis.config.config?.video?.voice ?? "professional, clear, warm, confident";
+  const sceneList = input.timingPlan.sceneTimings
+    .map((scene, index) => `  ${index + 1}. ${scene.title}: about ${scene.durationSeconds}s, up to ${scene.maxNarrationWords} spoken words`)
+    .join("\n");
 
   const instructions = `You are a senior product demo scriptwriter.
 
@@ -71,9 +76,14 @@ Your goals:
 - Understand what the product is, who it helps, and what problem it solves.
 - Turn repository facts into a professional product pitch, not a README summary.
 - Use a natural spoken style suitable for a ${targetDuration}-second demo.
+- Respect the available scene count and visual material. Do not write more walkthrough scenes than the timing plan provides.
+- Keep the final spoken narration around ${input.timingPlan.minNarrationWords}-${input.timingPlan.maxNarrationWords} words, targeting ${input.timingPlan.targetNarrationWords} words.
+- Use exactly ${input.timingPlan.sceneCount} scenes, matching this timing plan:
+${sceneList}
 - Make the walkthrough feel intentional: opening problem, positioning, feature proof, and closing pitch.
 - Prefer user value over implementation trivia.
 - Use conservative wording for medium or low-confidence claims.
+- If only a few features are available, write shorter and deeper rather than inventing extra material.
 
 Avoid:
 - Markdown badges, shield text, raw URLs, install commands, repo maintenance metadata, or implementation details unless they are central to product value.

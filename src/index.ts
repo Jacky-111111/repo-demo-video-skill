@@ -5,6 +5,7 @@ import { analyzeRepo } from "./analyzeRepo.js";
 import { composeVideo } from "./composeVideo.js";
 import { generateDemoPlan, renderManualRecordingGuide, renderProjectSummary, renderStoryboard } from "./generateDemoPlan.js";
 import { generateProfessionalScript } from "./generateProfessionalScript.js";
+import { generateTimingPlan } from "./generateTimingPlan.js";
 import { generateVoiceover } from "./generateVoiceover.js";
 import { createTimestampedOutputDir, isProbablyGitHubUrl, writeJson, writeText } from "./fileUtils.js";
 import { recordBrowserDemo } from "./recordBrowserDemo.js";
@@ -76,10 +77,12 @@ async function main(): Promise<void> {
 
   const analysis = await analyzeRepo(options);
   const plan = generateDemoPlan(analysis);
+  const timingPlan = generateTimingPlan(analysis, plan);
   const outputDir = await createTimestampedOutputDir(analysis.repoPath);
 
   await writeText(path.join(outputDir, "project_summary.md"), renderProjectSummary(analysis, plan));
   await writeJson(path.join(outputDir, "demo_plan.draft.json"), plan);
+  await writeJson(path.join(outputDir, "timing_plan.json"), timingPlan);
   await writeText(path.join(outputDir, "demo_storyboard.md"), renderStoryboard(plan));
   await writeText(path.join(outputDir, "manual_recording_guide.md"), renderManualRecordingGuide(analysis, plan));
 
@@ -95,9 +98,9 @@ async function main(): Promise<void> {
         observations: [],
         warnings: ["Draft mode skipped browser recording."]
       }
-    : await recordBrowserDemo(analysis.demoUrl?.value ?? analysis.localUrl?.value, plan, outputDir);
+    : await recordBrowserDemo(analysis.demoUrl?.value ?? analysis.localUrl?.value, plan, outputDir, timingPlan);
 
-  const scriptResult = await generateProfessionalScript(analysis, plan, recording);
+  const scriptResult = await generateProfessionalScript(analysis, plan, timingPlan, recording);
   const narrationScript = scriptResult.script;
 
   await writeText(path.join(outputDir, "narration_script.draft.md"), scriptResult.draftScript);
@@ -118,12 +121,14 @@ async function main(): Promise<void> {
     outputDir,
     finalPlanGenerated: plan.confidenceSummary.shouldGenerateFinalPlan,
     deliverables: composition.deliverables,
+    timingPlan,
     scriptQuality: scriptResult.qualityReport,
     voiceover,
     recording,
     composition,
     warnings: [
       ...analysis.warnings,
+      ...timingPlan.pacingWarnings,
       ...scriptResult.qualityReport.warnings,
       ...voiceover.warnings,
       ...recording.warnings,
